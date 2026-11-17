@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+
+    options {
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        VIRTUAL_ENV = 'venv'
+        DEPLOY_DIR = "${WORKSPACE}@deploy"
+    }
+
+    stages {
+        stage('Setup') {
+            steps {
+                sh 'python3 -m venv "$VIRTUAL_ENV"'
+                sh '"$VIRTUAL_ENV/bin/python" -m pip install -r requirements.txt'
+                sh 'mkdir -p reports'
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                sh '"$VIRTUAL_ENV/bin/python" -m flake8 app.py tests'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '"$VIRTUAL_ENV/bin/python" -m pytest -v --junitxml=reports/tests.xml'
+            }
+        }
+
+        stage('Coverage') {
+            steps {
+                sh '"$VIRTUAL_ENV/bin/python" -m coverage run -m pytest'
+                sh '"$VIRTUAL_ENV/bin/python" -m coverage report -m > reports/coverage.txt'
+                sh 'cat reports/coverage.txt'
+                sh '"$VIRTUAL_ENV/bin/python" -m coverage xml -o reports/coverage.xml'
+                sh '"$VIRTUAL_ENV/bin/python" -m coverage html -d reports/htmlcov'
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                sh '"$VIRTUAL_ENV/bin/python" -m bandit app.py -f txt -o reports/bandit.txt'
+                sh 'cat reports/bandit.txt'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh 'sh deploy.sh "$DEPLOY_DIR"'
+                sh 'cp "$DEPLOY_DIR/output.txt" reports/deployment.txt'
+                echo "Application deployed to ${env.DEPLOY_DIR}"
+            }
+        }
+    }
+
+    post {
+        always {
+            junit testResults: 'reports/tests.xml', allowEmptyResults: true
+            archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+            deleteDir()
+        }
+    }
+}
