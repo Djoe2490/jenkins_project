@@ -1,0 +1,51 @@
+Lab 10: Jenkins for DevOps Automation Using Python
+Joe Dib
+GitHub: Djoe2490
+Repository: https://github.com/Djoe2490/jenkins_project
+
+Changes
+
+I updated the greeting to return "Hello, World from Joe Dib!" and fixed
+the test so it matches the application. I also added a test with another
+name. The requirements file includes flake8, pytest, coverage and bandit.
+
+The Python-CI-CD job loads Jenkinsfile_Joe_Dib from the main branch using
+Pipeline script from SCM. Setup creates the virtual environment and installs
+the dependencies. Lint checks app.py and the tests, then Test runs pytest.
+The commands use the virtual environment's Python directly, so they do not
+depend on shell activation.
+
+I added a Coverage stage that runs the tests with coverage.py and generates
+text, XML and HTML reports. The minimum coverage is set to 100%. The main
+entry point is excluded from the unit coverage calculation; it is checked
+separately when the deployed application runs.
+
+The Security Scan stage runs Bandit on app.py. A finding causes the command
+to fail and stops the pipeline before deployment.
+
+Deploy runs deploy.sh to copy app.py into a local deployment directory next
+to the Jenkins workspace. It runs that copy and checks the greeting. This
+directory stays available after the workspace is cleaned. Jenkins saves the
+test results, coverage reports, security report and deployment output before
+cleanup.
+
+Build results
+
+Jenkins version: 2.528.1
+Job: Python-CI-CD
+Build: #1
+Date: November 17, 2026
+Result: SUCCESS
+
+Setup: dependencies installed successfully.
+Lint: no style errors.
+Test: 2 tests passed.
+Coverage: 100%, with 2 statements and 0 missed statements.
+Security Scan: no issues identified; all severity counts were 0.
+Deploy: the deployed copy printed "Hello, World from Joe Dib!".
+
+The console ended with "Finished: SUCCESS". The full output is saved in
+reports/jenkins-build-1.txt, with the individual results in reports/.
+
+Jenkins build URL on this computer:
+http://localhost:8081/job/Python-CI-CD/1/
